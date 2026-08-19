@@ -127,6 +127,11 @@ void DesktopApp::LoadLayoutSlots()
         *document.iconSpacing <= 2.0f)
         iconSpacingScale_ = *document.iconSpacing;
 
+    if (document.iconSize &&
+        *document.iconSize >= 1.0f &&
+        *document.iconSize <= 2.0f)
+        iconSizeScale_ = *document.iconSize;
+
     componentSpacingScale_ = snowdesktop::widget_spacing_rules::
         ClampComponentScale(
             document.componentSpacing.value_or(1.0f),
@@ -676,6 +681,7 @@ void DesktopApp::SaveLayoutSlots()
          << ",\n  \"itemFontSize\": " << itemFontSize_
          << ",\n  \"itemFontWeight\": " << static_cast<int>(itemFontWeight_)
          << ",\n  \"iconSpacing\": " << iconSpacingScale_
+         << ",\n  \"iconSize\": " << iconSizeScale_
          << ",\n  \"componentSpacing\": " << componentSpacingScale_
          << ",\n  \"shortcutArrowMode\": " << shortcutArrowMode_
          << ",\n  \"iconBeautifyEnabled\": " << (iconBeautifyEnabled_ ? "true" : "false")

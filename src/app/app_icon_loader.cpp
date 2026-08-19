@@ -30,7 +30,7 @@ void ClampAlphaToColorKey(HBITMAP bitmap, COLORREF key)
 int DesktopApp::ComputeIconLoadRequestSize() const
 {
     // Fixed 128px high-resolution source for now; the icon size preset (phase A) will scale this.
-    return kIconBitmapSize * 2;
+    return std::clamp(static_cast<int>(std::round(kIconBitmapSize * 2 * iconSizeScale_)), 64, 256);
 }
 
 void DesktopApp::StartIconLoader()

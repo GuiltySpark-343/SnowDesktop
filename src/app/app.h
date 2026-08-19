@@ -1403,6 +1403,9 @@ private:
     void ToggleLastPagePin(POINT screenPoint);
     /** @brief 设置图标间距比例。 @param value 间距倍率 */
     void SetIconSpacing(float value);
+    void SetIconSizePreset(int preset);
+    void SetIconSizeScale(float value);
+    void AdjustIconSize(float delta);
     /** @brief 设置组件外框间距比例。 @param value 间距倍率 */
     void SetComponentSpacing(float value);
     float GetComponentSpacingScale() const
@@ -2504,6 +2507,7 @@ private:
     std::vector<std::wstring> savedPageIds_;
     RECT layoutWorkArea_{};
     float iconSpacingScale_ = 1.0f;
+    float iconSizeScale_ = 1.0f;
     float componentSpacingScale_ = 1.0f;
     float itemFontSize_ = kItemFontSize;
     DWRITE_FONT_WEIGHT itemFontWeight_ = DWRITE_FONT_WEIGHT_SEMI_BOLD;

@@ -245,6 +245,39 @@ void DesktopApp::ToggleLastPagePin(POINT screenPoint)
  * @brief 设置图标间距比例（0.5 ~ 2.0），并重新布局。
  * @param value 新的间距倍率。
  */
+void DesktopApp::SetIconSizeScale(float value)
+{
+    const float clamped = std::clamp(
+        value, kIconSizeMinimumScale, kIconSizeMaximumScale);
+    if (clamped == iconSizeScale_)
+        return;
+    iconSizeScale_ = clamped;
+    for (auto& page : gridPages_)
+        ApplyIconSpacingToPage(page);
+    ApplyDockWorkAreaReservation();
+    LayoutItems();
+    SaveLayoutSlots();
+    InvalidateRect(hwnd_, nullptr, TRUE);
+}
+
+void DesktopApp::SetIconSizePreset(int preset)
+{
+    switch (preset)
+    {
+    case 0: SetIconSizeScale(kIconSizeSmallScale); break;
+    case 1: SetIconSizeScale(kIconSizeMediumScale); break;
+    case 2: SetIconSizeScale(kIconSizeLargeScale); break;
+    default: break;
+    }
+}
+
+void DesktopApp::AdjustIconSize(float delta)
+{
+    const float newValue = std::clamp(
+        iconSizeScale_ + delta, kIconSizeMinimumScale, kIconSizeMaximumScale);
+    SetIconSizeScale(newValue);
+}
+
 void DesktopApp::SetIconSpacing(float value)
 {
     const float clamped = std::clamp(

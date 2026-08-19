@@ -2435,6 +2435,40 @@ void SettingsWindow::DrawDisplayPage()
             componentSpacingScale_ * 100.0f));
     }
 
+    BeginSettingRow(_L("app.settings.icon_size"), sliderActionW);
+    ImGui::SetNextItemWidth(actionSliderW);
+    if (ImGui::SliderInt("##IconSize", &iconSizePct_, 100, 200, "%d%%", ImGuiSliderFlags_None))
+    {
+        iconSizeScale_ = iconSizePct_ / 100.0f;
+        markChanged();
+    }
+    ImGui::SameLine();
+    if (BlueButton((std::string(_L("app.settings.restore_default")) +
+        "##IconSizeDefault").c_str(), ImVec2(resetW, 0)))
+    {
+        iconSizePct_ = 100;
+        iconSizeScale_ = 1.0f;
+        markChanged();
+    }
+
+    BeginSettingRow(_L("app.settings.icon_size_preset"), 0);
+    auto selectIconSize = [&](int pct) {
+        iconSizePct_ = pct;
+        iconSizeScale_ = pct / 100.0f;
+        markChanged();
+    };
+    if (ImGui::RadioButton(_L("app.settings.icon_size_small"),
+            std::abs(iconSizeScale_ - kIconSizeSmallScale) < 0.001f))
+        selectIconSize(static_cast<int>(std::round(kIconSizeSmallScale * 100.0f)));
+    ImGui::SameLine();
+    if (ImGui::RadioButton(_L("app.settings.icon_size_medium"),
+            std::abs(iconSizeScale_ - kIconSizeMediumScale) < 0.001f))
+        selectIconSize(static_cast<int>(std::round(kIconSizeMediumScale * 100.0f)));
+    ImGui::SameLine();
+    if (ImGui::RadioButton(_L("app.settings.icon_size_large"),
+            std::abs(iconSizeScale_ - kIconSizeLargeScale) < 0.001f))
+        selectIconSize(static_cast<int>(std::round(kIconSizeLargeScale * 100.0f)));
+
     BeginSettingRow(_L("app.settings.title_font_size"), sliderActionW);
     ImGui::SetNextItemWidth(actionSliderW);
     if (ImGui::SliderFloat("##ItemFontSize", &itemFontSize_,

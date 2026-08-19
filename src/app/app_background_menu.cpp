@@ -1366,6 +1366,31 @@ void DesktopApp::ShowBackgroundContextMenu(POINT screenPoint)
             SetMenuItemIcon(displaySettingsMenu, reinterpret_cast<UINT_PTR>(fontSizeMenu), L"");
         }
 
+        HMENU iconSizeMenu = CreatePopupMenu();
+        if (iconSizeMenu)
+        {
+            const int currentIconSizePercent = static_cast<int>(
+                std::round(iconSizeScale_ * 100.0f));
+            auto addIconSizeItem = [&](UINT id, const wchar_t* label, float scaleValue) {
+                UINT flags = MF_STRING;
+                if (std::abs(iconSizeScale_ - scaleValue) < 0.001f) flags |= MF_CHECKED;
+                AppendMenuW(iconSizeMenu, flags, id, label);
+            };
+            addIconSizeItem(kContextIconSizeSmall, _LW("app.menu.icon_size_small"), kIconSizeSmallScale);
+            addIconSizeItem(kContextIconSizeMedium, _LW("app.menu.icon_size_medium"), kIconSizeMediumScale);
+            addIconSizeItem(kContextIconSizeLarge, _LW("app.menu.icon_size_large"), kIconSizeLargeScale);
+            AppendMenuW(iconSizeMenu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(iconSizeMenu, MF_STRING, kContextIconSizeIncrease, _LW("app.menu.inc_size"));
+            AppendMenuW(iconSizeMenu, MF_STRING, kContextIconSizeDecrease, _LW("app.menu.dec_size"));
+            const std::wstring iconSizeLabel = _LFW("app.menu.icon_size_pct",
+                std::to_wstring(currentIconSizePercent));
+            AppendMenuW(displaySettingsMenu, MF_POPUP,
+                reinterpret_cast<UINT_PTR>(iconSizeMenu), iconSizeLabel.c_str());
+            SetMenuItemIcon(displaySettingsMenu, reinterpret_cast<UINT_PTR>(iconSizeMenu), L"\uF0B2");
+            SetMenuItemIcon(iconSizeMenu, kContextIconSizeIncrease, L"\uF067");
+            SetMenuItemIcon(iconSizeMenu, kContextIconSizeDecrease, L"\uF068");
+        }
+
         HMENU fontWeightMenu = CreatePopupMenu();
         if (fontWeightMenu)
         {
@@ -1825,6 +1850,11 @@ void DesktopApp::ShowBackgroundContextMenu(POINT screenPoint)
         case kContextFontSizeSmall: SetItemFontSize(12.0f); break;
         case kContextFontSizeMedium: SetItemFontSize(15.0f); break;
         case kContextFontSizeLarge: SetItemFontSize(16.0f); break;
+        case kContextIconSizeSmall: SetIconSizePreset(0); break;
+        case kContextIconSizeMedium: SetIconSizePreset(1); break;
+        case kContextIconSizeLarge: SetIconSizePreset(2); break;
+        case kContextIconSizeIncrease: AdjustIconSize(0.05f); break;
+        case kContextIconSizeDecrease: AdjustIconSize(-0.05f); break;
         case kContextFontWeightBold: SetItemFontWeight(DWRITE_FONT_WEIGHT_BOLD); break;
         case kContextFontWeightMedium: SetItemFontWeight(DWRITE_FONT_WEIGHT_SEMI_BOLD); break;
         case kContextFontWeightFine: SetItemFontWeight(DWRITE_FONT_WEIGHT_NORMAL); break;

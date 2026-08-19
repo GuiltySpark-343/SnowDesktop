@@ -77,8 +77,8 @@ void DesktopApp::ConfigureGridPage(GridPage& page) const
     // The work area is already in physical pixels. Default rows and columns are
     // derived from the physical screen area only, so changing Windows DPI does
     // not change the page grid.
-    const int cw = kCellWidth;
-    const int ch = kMinCellHeight;
+    const int cw = std::max(1, static_cast<int>(std::round(kCellWidth * iconSizeScale_)));
+    const int ch = std::max(1, static_cast<int>(std::round(kMinCellHeight * iconSizeScale_)));
     const int w  = static_cast<int>(std::max<LONG>(1, page.workArea.right - page.workArea.left));
     const int h  = static_cast<int>(std::max<LONG>(1, page.workArea.bottom - page.workArea.top));
     const int uw = std::max(1, w - marginX * 2);
@@ -155,6 +155,9 @@ void DesktopApp::ApplyIconSpacingToPage(GridPage& page)
         const int usableExtent = std::max(count, extent - margin * 2);
         cellSize = std::max(1,
             (usableExtent - targetGap * (count - 1)) / count);
+        const int maxCellSize = std::max(1, usableExtent / count);
+        cellSize = std::clamp(static_cast<int>(std::round(
+            cellSize * iconSizeScale_)), 1, maxCellSize);
         const int remainingGapSpace = std::max(0,
             usableExtent - count * cellSize);
         gap = (remainingGapSpace + (count - 1) / 2) / (count - 1);

@@ -525,6 +525,7 @@ int DesktopApp::Run(HINSTANCE instance, int showCommand)
         });
         settingsWindow_->SetDisplaySettingsChangedCallback([this]() {
             SetIconSpacing(settingsWindow_->GetIconSpacingScale());
+            SetIconSizeScale(settingsWindow_->GetIconSizeScale());
             SetComponentSpacing(
                 settingsWindow_->GetComponentSpacingScale());
             SetItemFontSize(settingsWindow_->GetItemFontSizeD());
@@ -549,7 +550,7 @@ int DesktopApp::Run(HINSTANCE instance, int showCommand)
             return GetMaximumComponentSpacingScale();
         });
 
-        settingsWindow_->SyncDisplaySettings(iconSpacingScale_,
+        settingsWindow_->SyncDisplaySettings(iconSizeScale_, iconSpacingScale_,
             componentSpacingScale_, itemFontSize_,
             static_cast<float>(itemFontWeight_), shortcutArrowMode_, iconBeautifyEnabled_,
             iconBeautifyMode_,

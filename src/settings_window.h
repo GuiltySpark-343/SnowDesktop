@@ -15,6 +15,7 @@
 #include <dxgi1_2.h>
 #include <wrl/client.h>
 
+#include "constants.h"
 #include "general_settings.h"
 #include "personalization.h"
 #include "dock_settings.h"
@@ -244,7 +245,7 @@ public:
         std::function<void(bool)> callback)
     { animationDiagnosticsToggleCallback_ = std::move(callback); }
 
-    void SyncDisplaySettings(float spacingScale, float componentSpacingScale,
+    void SyncDisplaySettings(float iconSizeScale, float spacingScale, float componentSpacingScale,
         float fontSize, float fontWeight,
         int shortcutArrowMode,
         bool iconBeautifyEnabled,
@@ -259,6 +260,13 @@ public:
         float iconBeautifyBgEndB,
         int iconBeautifyGradientDirection)
     {
+        iconSizeScale_ = std::clamp(
+            iconSizeScale,
+            kIconSizeMinimumScale,
+            kIconSizeMaximumScale);
+        iconSizePct_ = static_cast<int>(std::round(
+            iconSizeScale_ * 100.0f));
+
         iconSpacingScale_ = std::clamp(
             spacingScale,
             snowdesktop::widget_spacing_rules::kMinimumScale,
@@ -365,6 +373,7 @@ public:
     const CategorySettings& GetCategorySettings() const { return categorySettings_; }
 
     float GetIconSpacingScale() const { return iconSpacingScale_; }
+    float GetIconSizeScale() const { return iconSizeScale_; }
     float GetComponentSpacingScale() const { return componentSpacingScale_; }
     float GetItemFontSizeD() const { return itemFontSize_; }
     float GetItemFontWeightD() const { return itemFontWeight_; }
@@ -813,6 +822,8 @@ private:
 
     /// 当前图标间距缩放
     float iconSpacingScale_ = 1.0f;
+    float iconSizeScale_ = 1.0f;
+    int iconSizePct_ = 100;
     float componentSpacingScale_ = 1.0f;
 
     /// 当前桌面项目字号
