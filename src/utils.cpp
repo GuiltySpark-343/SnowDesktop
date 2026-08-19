@@ -1061,6 +1061,108 @@ HBITMAP CreateAlphaBitmapFromIcon(HICON icon, int width, int height, SIZE& size)
  * @param bitmapSize [out] 输出位图的尺寸。
  * @return 成功时返回带有 Alpha 通道的 HBITMAP，失败时返回 nullptr。
  */
+static HBITMAP TrimIconTransparentMargin(HBITMAP source, SIZE& size)
+{
+    if (source == nullptr || size.cx <= 0 || size.cy <= 0)
+        return source;
+
+    const int width = size.cx;
+    const int height = size.cy;
+    HDC screenDc = GetDC(nullptr);
+    if (screenDc == nullptr)
+        return source;
+
+    BITMAPINFO bitmapInfo{};
+    bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
+    bitmapInfo.bmiHeader.biWidth = width;
+    bitmapInfo.bmiHeader.biHeight = -height;
+    bitmapInfo.bmiHeader.biPlanes = 1;
+    bitmapInfo.bmiHeader.biBitCount = 32;
+    bitmapInfo.bmiHeader.biCompression = BI_RGB;
+
+    std::vector<std::uint32_t> pixels(
+        static_cast<size_t>(width) * static_cast<size_t>(height));
+    if (GetDIBits(screenDc, source, 0, static_cast<UINT>(height),
+            pixels.data(), &bitmapInfo, DIB_RGB_COLORS) == 0)
+    {
+        ReleaseDC(nullptr, screenDc);
+        return source;
+    }
+
+    int minX = width, minY = height, maxX = -1, maxY = -1;
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            const std::uint32_t pixel =
+                pixels[static_cast<size_t>(y) * width + x];
+            if (((pixel >> 24) & 0xff) > 8)
+            {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+    if (maxX < 0)
+    {
+        ReleaseDC(nullptr, screenDc);
+        return source;
+    }
+
+    const int contentW = maxX - minX + 1;
+    const int contentH = maxY - minY + 1;
+    if (contentW >= static_cast<int>(width * 0.90f) &&
+        contentH >= static_cast<int>(height * 0.90f))
+    {
+        // Content already fills the bitmap; keep it untouched.
+        ReleaseDC(nullptr, screenDc);
+        return source;
+    }
+
+    const int pad = std::max(2, static_cast<int>(std::round(
+        std::max(contentW, contentH) * 0.04f)));
+    const int centerX = (minX + maxX) / 2;
+    const int centerY = (minY + maxY) / 2;
+    const int halfSide = (std::max(contentW, contentH) + 1) / 2 + pad;
+    const int srcX = std::max(0, centerX - halfSide);
+    const int srcY = std::max(0, centerY - halfSide);
+    const int srcRight = std::min(width, centerX + halfSide + 1);
+    const int srcBottom = std::min(height, centerY + halfSide + 1);
+    const int newW = srcRight - srcX;
+    const int newH = srcBottom - srcY;
+    if (newW <= 0 || newH <= 0 || newW > width || newH > height)
+    {
+        ReleaseDC(nullptr, screenDc);
+        return source;
+    }
+
+    void* bits = nullptr;
+    HBITMAP cropped = CreateTopDown32BppDib(screenDc, newW, newH, &bits);
+    if (cropped == nullptr || bits == nullptr)
+    {
+        if (cropped != nullptr) DeleteObject(cropped);
+        ReleaseDC(nullptr, screenDc);
+        return source;
+    }
+    auto* destination = static_cast<std::uint32_t*>(bits);
+    for (int y = 0; y < newH; ++y)
+    {
+        std::copy(
+            pixels.begin() +
+                static_cast<ptrdiff_t>((srcY + y) * width + srcX),
+            pixels.begin() +
+                static_cast<ptrdiff_t>((srcY + y) * width + srcX + newW),
+            destination + static_cast<ptrdiff_t>(y * newW));
+    }
+    ReleaseDC(nullptr, screenDc);
+    DeleteObject(source);
+    size.cx = newW;
+    size.cy = newH;
+    return cropped;
+}
+
 HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackIndex, SIZE& bitmapSize, bool fullQuality, int requestedSize)
 {
     bitmapSize = {};
@@ -1076,7 +1178,7 @@ HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackInd
             DeleteObject(bitmap);
             if (alphaBitmap != nullptr)
             {
-                return alphaBitmap;
+                return TrimIconTransparentMargin(alphaBitmap, bitmapSize);
             }
         }
     }
@@ -1104,7 +1206,7 @@ HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackInd
             DestroyIcon(icon);
             if (bitmap != nullptr)
             {
-                return bitmap;
+                return TrimIconTransparentMargin(bitmap, bitmapSize);
             }
         }
     }
@@ -1121,7 +1223,7 @@ HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackInd
     {
         HBITMAP bitmap = CreateAlphaBitmapFromIcon(icon, requestedSize, requestedSize, bitmapSize);
         DestroyIcon(icon);
-        return bitmap;
+        return TrimIconTransparentMargin(bitmap, bitmapSize);
     }
 
     return nullptr;
