@@ -97,6 +97,7 @@ void DesktopApp::EnumerateFolderMappingEntries(
                     phase2.sysIconIndex = entry.sysIconIndex;
                     phase2.isDesktopItem = false;
                     phase2.phase = IconLoadPhase::Phase2;
+                    phase2.requestedSize = ComputeIconLoadRequestSize();
                     EnqueueIconLoad(std::move(phase2));
                 }
             }
@@ -111,6 +112,7 @@ void DesktopApp::EnumerateFolderMappingEntries(
                 phase1.parsingName = entry.name;
                 phase1.isDesktopItem = false;
                 phase1.phase = IconLoadPhase::Phase1;
+                phase1.requestedSize = ComputeIconLoadRequestSize();
                 PIDLIST_ABSOLUTE pidl = nullptr;
                 if (SUCCEEDED(SHParseDisplayName(entry.fullPath.c_str(), nullptr, &pidl, 0, nullptr)))
                 {
@@ -144,6 +146,7 @@ void DesktopApp::EnumerateFolderMappingEntries(
                     task.isDesktopItem = false;
                     task.folderPath = entry.fullPath;
                     task.phase = IconLoadPhase::Phase1;
+                    task.requestedSize = ComputeIconLoadRequestSize();
                     EnqueueIconLoad(std::move(task));
                 }
             }

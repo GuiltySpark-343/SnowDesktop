@@ -1061,13 +1061,13 @@ HBITMAP CreateAlphaBitmapFromIcon(HICON icon, int width, int height, SIZE& size)
  * @param bitmapSize [out] 输出位图的尺寸。
  * @return 成功时返回带有 Alpha 通道的 HBITMAP，失败时返回 nullptr。
  */
-HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackIndex, SIZE& bitmapSize, bool fullQuality)
+HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackIndex, SIZE& bitmapSize, bool fullQuality, int requestedSize)
 {
     bitmapSize = {};
     ComPtr<IShellItemImageFactory> imageFactory;
     if (SUCCEEDED(SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&imageFactory))) && imageFactory)
     {
-        SIZE size{ kIconBitmapSize, kIconBitmapSize };
+        SIZE size{ requestedSize, requestedSize };
         HBITMAP bitmap = nullptr;
         UINT flags = fullQuality ? SIIGBF_RESIZETOFIT : SIIGBF_ICONONLY;
         if (SUCCEEDED(imageFactory->GetImage(size, flags, &bitmap)) && bitmap != nullptr)
@@ -1100,7 +1100,7 @@ HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackInd
         imageList->GetIcon(fallbackIndex, ILD_TRANSPARENT | ILD_PRESERVEALPHA, &icon);
         if (icon != nullptr)
         {
-            HBITMAP bitmap = CreateAlphaBitmapFromIcon(icon, kIconBitmapSize, kIconBitmapSize, bitmapSize);
+            HBITMAP bitmap = CreateAlphaBitmapFromIcon(icon, requestedSize, requestedSize, bitmapSize);
             DestroyIcon(icon);
             if (bitmap != nullptr)
             {
@@ -1119,7 +1119,7 @@ HBITMAP GetHighResolutionShellIconBitmap(PCIDLIST_ABSOLUTE pidl, int fallbackInd
     icon = iconInfo.hIcon;
     if (icon != nullptr)
     {
-        HBITMAP bitmap = CreateAlphaBitmapFromIcon(icon, kIconBitmapSize, kIconBitmapSize, bitmapSize);
+        HBITMAP bitmap = CreateAlphaBitmapFromIcon(icon, requestedSize, requestedSize, bitmapSize);
         DestroyIcon(icon);
         return bitmap;
     }

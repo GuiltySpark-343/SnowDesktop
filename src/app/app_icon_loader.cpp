@@ -27,6 +27,12 @@ void ClampAlphaToColorKey(HBITMAP bitmap, COLORREF key)
 }
 }
 
+int DesktopApp::ComputeIconLoadRequestSize() const
+{
+    // Fixed 128px high-resolution source for now; the icon size preset (phase A) will scale this.
+    return kIconBitmapSize * 2;
+}
+
 void DesktopApp::StartIconLoader()
 {
     iconLoaderRunning_ = true;
@@ -54,7 +60,7 @@ void DesktopApp::StartIconLoader()
             SIZE bitmapSize{};
             HBITMAP bitmap = GetHighResolutionShellIconBitmap(
                 task.absolutePidl.get(), task.sysIconIndex, bitmapSize,
-                task.phase == IconLoadPhase::Phase2);
+                task.phase == IconLoadPhase::Phase2, task.requestedSize);
             if (task.phase == IconLoadPhase::Phase1 && bitmap)
                 ClampAlphaToColorKey(bitmap, kTransparentKey);
 

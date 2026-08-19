@@ -11,6 +11,55 @@
 #include "item.h"
 #include "types.h"
 #include "app.h"
+namespace
+{
+// High-quality icon rendering. ID2D1RenderTarget::DrawBitmap only supports
+// NEAREST/LINEAR interpolation; use ID2D1DeviceContext::DrawImage with cubic
+// interpolation when the caller is actually a device context (which the whole
+// render pipeline is). Fall back to DrawBitmap for semi-transparent states to
+// avoid per-icon layer overhead.
+void DrawIconBitmapHighQuality(
+    ID2D1RenderTarget* context,
+    ID2D1Bitmap* bmp,
+    const D2D1_RECT_F& dst,
+    float opacity)
+{
+    ID2D1DeviceContext* deviceContext = nullptr;
+    if (SUCCEEDED(context->QueryInterface(IID_PPV_ARGS(&deviceContext))) && deviceContext)
+    {
+        if (opacity >= 0.999f)
+        {
+            const D2D1_SIZE_F sourceSize = bmp->GetSize();
+            if (sourceSize.width > 0.0f && sourceSize.height > 0.0f)
+            {
+                const float scaleX = (dst.right - dst.left) / sourceSize.width;
+                const float scaleY = (dst.bottom - dst.top) / sourceSize.height;
+                if (scaleX > 0.0f && scaleY > 0.0f)
+                {
+                    D2D1_MATRIX_3X2_F original{};
+                    deviceContext->GetTransform(&original);
+                    const D2D1_MATRIX_3X2_F scale = D2D1::Matrix3x2F::Scale(
+                        scaleX, scaleY, D2D1::Point2F(dst.left, dst.top));
+                    deviceContext->SetTransform(scale);
+                    deviceContext->DrawImage(bmp,
+                        D2D1::Point2F(dst.left, dst.top),
+                        D2D1::RectF(0.0f, 0.0f, sourceSize.width, sourceSize.height),
+                        D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC);
+                    deviceContext->SetTransform(original);
+                    deviceContext->Release();
+                    return;
+                }
+            }
+        }
+        context->DrawBitmap(bmp, dst, opacity,
+            D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+        deviceContext->Release();
+        return;
+    }
+    context->DrawBitmap(bmp, dst, opacity,
+        D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+}
+}
 
 // ── DesktopIcon ──────────────────────────────────────────────
 
@@ -156,7 +205,7 @@ void DesktopIcon::Draw(ID2D1RenderTarget* context, RECT rect, int state, bool li
             D2D1_RECT_F dst = D2D1::RectF(
                 static_cast<float>(iconRect.left), static_cast<float>(iconRect.top),
                 static_cast<float>(iconRect.right), static_cast<float>(iconRect.bottom));
-            context->DrawBitmap(bmp, dst, alpha, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+            DrawIconBitmapHighQuality(context, bmp, dst, alpha);
         }
         else
         {
@@ -312,7 +361,7 @@ void FolderEntryIcon::Draw(ID2D1RenderTarget* context, RECT rect, int state, boo
             D2D1_RECT_F dst = D2D1::RectF(
                 static_cast<float>(iconRect.left), static_cast<float>(iconRect.top),
                 static_cast<float>(iconRect.right), static_cast<float>(iconRect.bottom));
-            context->DrawBitmap(bmp, dst, opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+            DrawIconBitmapHighQuality(context, bmp, dst, opacity);
         }
         else
         {

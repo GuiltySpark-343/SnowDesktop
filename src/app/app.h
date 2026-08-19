@@ -139,6 +139,7 @@ struct IconLoadTask {
     bool isDesktopItem = true;
     std::wstring folderPath;
     IconLoadPhase phase = IconLoadPhase::Phase1;
+    int requestedSize = 0; /**< requested bitmap target size (64/128/256), 0 = default */
 };
 struct RecycleBinPollState {
     std::atomic<int64_t> hasItems{ -1 };   ///< -1 未知，0 空，1 非空
@@ -1912,6 +1913,7 @@ private:
     void StartIconLoader();
     void StopIconLoader();
     void BeginIconLoadGeneration();
+    int ComputeIconLoadRequestSize() const;
     void EnqueueIconLoad(IconLoadTask task);
     void OnIconLoaded(WPARAM wParam, LPARAM lParam);
     void DrawPlaceholderIcon(ID2D1RenderTarget* ctx, int sysIconIndex, RECT iconRect,

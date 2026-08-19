@@ -166,6 +166,7 @@ auto oldIt = oldIconCache.find(ToUpperInvariant(item.layoutKey));
                 phase2.parsingName = item.parsingName;
                 phase2.isDesktopItem = true;
                 phase2.phase = IconLoadPhase::Phase2;
+                phase2.requestedSize = ComputeIconLoadRequestSize();
                 EnqueueIconLoad(std::move(phase2));
             }
         } else {
@@ -187,6 +188,7 @@ auto oldIt = oldIconCache.find(ToUpperInvariant(item.layoutKey));
             task.parsingName = item.parsingName;
             task.isDesktopItem = true;
             task.phase = IconLoadPhase::Phase1;
+            task.requestedSize = ComputeIconLoadRequestSize();
             EnqueueIconLoad(std::move(task));
         }
 
