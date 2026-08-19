@@ -155,9 +155,6 @@ void DesktopApp::ApplyIconSpacingToPage(GridPage& page)
         const int usableExtent = std::max(count, extent - margin * 2);
         cellSize = std::max(1,
             (usableExtent - targetGap * (count - 1)) / count);
-        const int maxCellSize = std::max(1, usableExtent / count);
-        cellSize = std::clamp(static_cast<int>(std::round(
-            cellSize * iconSizeScale_)), 1, maxCellSize);
         const int remainingGapSpace = std::max(0,
             usableExtent - count * cellSize);
         gap = (remainingGapSpace + (count - 1) / 2) / (count - 1);

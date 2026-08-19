@@ -252,10 +252,19 @@ void DesktopApp::SetIconSizeScale(float value)
     if (clamped == iconSizeScale_)
         return;
     iconSizeScale_ = clamped;
+
+    // Windows-style icon size: a larger size reduces the row/column count so
+    // every cell keeps its aspect ratio and icons scale proportionally. The
+    // inter-cell gap stays proportional and is never squeezed.
     for (auto& page : gridPages_)
+    {
+        ConfigureGridPage(page);
+        savedPageColumns_[page.id] = page.columns;
+        savedPageRows_[page.id] = page.rows;
         ApplyIconSpacingToPage(page);
+    }
     ApplyDockWorkAreaReservation();
-    LayoutItems();
+    RelayoutDisplacedItems();
     SaveLayoutSlots();
     InvalidateRect(hwnd_, nullptr, TRUE);
 }
