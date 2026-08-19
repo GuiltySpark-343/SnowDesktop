@@ -1121,15 +1121,14 @@ static HBITMAP TrimIconTransparentMargin(HBITMAP source, SIZE& size)
         return source;
     }
 
-    const int pad = std::clamp(static_cast<int>(std::round(
-        std::max(contentW, contentH) * 0.12f)), 3, 24);
-    const int centerX = (minX + maxX) / 2;
-    const int centerY = (minY + maxY) / 2;
-    const int halfSide = (std::max(contentW, contentH) + 1) / 2 + pad;
-    const int srcX = std::max(0, centerX - halfSide);
-    const int srcY = std::max(0, centerY - halfSide);
-    const int srcRight = std::min(width, centerX + halfSide + 1);
-    const int srcBottom = std::min(height, centerY + halfSide + 1);
+    const int padX = std::clamp(static_cast<int>(std::round(
+        contentW * 0.12f)), 3, 24);
+    const int padY = std::clamp(static_cast<int>(std::round(
+        contentH * 0.12f)), 3, 24);
+    const int srcX = std::max(0, minX - padX);
+    const int srcY = std::max(0, minY - padY);
+    const int srcRight = std::min(width, maxX + 1 + padX);
+    const int srcBottom = std::min(height, maxY + 1 + padY);
     const int newW = srcRight - srcX;
     const int newH = srcBottom - srcY;
     if (newW <= 0 || newH <= 0 || newW > width || newH > height)

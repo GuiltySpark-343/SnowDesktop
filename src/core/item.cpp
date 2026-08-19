@@ -24,40 +24,54 @@ void DrawIconBitmapHighQuality(
     const D2D1_RECT_F& dst,
     float opacity)
 {
+    const D2D1_SIZE_F sourceSize = bmp->GetSize();
+    const float dstWidth = dst.right - dst.left;
+    const float dstHeight = dst.bottom - dst.top;
+    float drawX = dst.left;
+    float drawY = dst.top;
+    float drawWidth = dstWidth;
+    float drawHeight = dstHeight;
+    float uniformScale = 1.0f;
+    if (sourceSize.width > 0.0f && sourceSize.height > 0.0f &&
+        dstWidth > 0.0f && dstHeight > 0.0f)
+    {
+        // Preserve the source aspect ratio: never stretch the artwork.
+        uniformScale = std::min(
+            dstWidth / sourceSize.width,
+            dstHeight / sourceSize.height);
+        drawWidth = sourceSize.width * uniformScale;
+        drawHeight = sourceSize.height * uniformScale;
+        drawX = (dst.left + dst.right - drawWidth) * 0.5f;
+        drawY = (dst.top + dst.bottom - drawHeight) * 0.5f;
+    }
+
     ID2D1DeviceContext* deviceContext = nullptr;
     if (SUCCEEDED(context->QueryInterface(IID_PPV_ARGS(&deviceContext))) && deviceContext)
     {
-        if (opacity >= 0.999f)
+        if (opacity >= 0.999f && uniformScale > 0.0f)
         {
-            const D2D1_SIZE_F sourceSize = bmp->GetSize();
-            if (sourceSize.width > 0.0f && sourceSize.height > 0.0f)
-            {
-                const float scaleX = (dst.right - dst.left) / sourceSize.width;
-                const float scaleY = (dst.bottom - dst.top) / sourceSize.height;
-                if (scaleX > 0.0f && scaleY > 0.0f)
-                {
-                    D2D1_MATRIX_3X2_F original{};
-                    deviceContext->GetTransform(&original);
-                    const D2D1_MATRIX_3X2_F scale = D2D1::Matrix3x2F::Scale(
-                        scaleX, scaleY, D2D1::Point2F(dst.left, dst.top));
-                    deviceContext->SetTransform(scale);
-                    deviceContext->DrawImage(bmp,
-                        D2D1::Point2F(dst.left, dst.top),
-                        D2D1::RectF(0.0f, 0.0f, sourceSize.width, sourceSize.height),
-                        D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC);
-                    deviceContext->SetTransform(original);
-                    deviceContext->Release();
-                    return;
-                }
-            }
+            D2D1_MATRIX_3X2_F original{};
+            deviceContext->GetTransform(&original);
+            const D2D1_MATRIX_3X2_F scale = D2D1::Matrix3x2F::Scale(
+                uniformScale, uniformScale, D2D1::Point2F(drawX, drawY));
+            deviceContext->SetTransform(scale);
+            deviceContext->DrawImage(bmp,
+                D2D1::Point2F(drawX, drawY),
+                D2D1::RectF(0.0f, 0.0f, sourceSize.width, sourceSize.height),
+                D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC);
+            deviceContext->SetTransform(original);
+            deviceContext->Release();
+            return;
         }
-        context->DrawBitmap(bmp, dst, opacity,
-            D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+        context->DrawBitmap(bmp,
+            D2D1::RectF(drawX, drawY, drawX + drawWidth, drawY + drawHeight),
+            opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
         deviceContext->Release();
         return;
     }
-    context->DrawBitmap(bmp, dst, opacity,
-        D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+    context->DrawBitmap(bmp,
+        D2D1::RectF(drawX, drawY, drawX + drawWidth, drawY + drawHeight),
+        opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
 }
 }
 
