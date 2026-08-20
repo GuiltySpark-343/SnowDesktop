@@ -691,6 +691,7 @@
     "widget.categories.default_document": "Document",
     "widget.categories.default_archive": "Archive",
     "widget.categories.default_audio": "Audio",
+    "widget.categories.default_code": "Code/Scripts",
     "widget.folder_mapping.empty": "Empty Folder",
     "widget.folder_mapping.unavailable": "This folder is unavailable",
     "widget.desktop.no_shortcut": "Desktop files do not support storing shortcuts",

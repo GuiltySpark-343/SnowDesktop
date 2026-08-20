@@ -691,6 +691,7 @@
   "widget.categories.default_document": "Documento",
   "widget.categories.default_archive": "Archivo",
   "widget.categories.default_audio": "Audio",
+    "widget.categories.default_code": "Código/Scripts",
   "widget.folder_mapping.empty": "Carpeta vacía",
   "widget.folder_mapping.unavailable": "Esta carpeta no está disponible",
   "widget.desktop.no_shortcut": "Los archivos de escritorio no admiten el almacenamiento de accesos directos",

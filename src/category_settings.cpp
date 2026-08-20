@@ -35,6 +35,7 @@ namespace
             { L"documents", L10N_KEY("widget.categories.default_document"), "documents", L".TXT .MD .DOC .DOCX .PDF .XLS .XLSX .PPT .PPTX .CSV" },
             { L"archives", L10N_KEY("widget.categories.default_archive"), "archives", L".ZIP .RAR .7Z .TAR .GZ .BZ2 .XZ" },
             { L"audio", L10N_KEY("widget.categories.default_audio"), "audio", L".MP3 .WAV .FLAC .AAC .M4A .OGG" },
+            { L"code", L10N_KEY("widget.categories.default_code"), "code", L".PY .BAT .CMD .IPYNB .JS .JSON .XML .YAML .YML .SH .PS1 .RB .PHP .HTML .CSS .CS .CPP .H .JAVA .GO .RS .TS" },
         };
         count = sizeof(rules) / sizeof(rules[0]);
         return rules;

@@ -691,6 +691,7 @@
   "widget.categories.default_document": "Dokument",
   "widget.categories.default_archive": "-Archiv",
   "widget.categories.default_audio": "Audio",
+    "widget.categories.default_code": "Code/Skripte",
   "widget.folder_mapping.empty": "Leerer Ordner",
   "widget.folder_mapping.unavailable": "Dieser Ordner ist nicht verfügbar",
   "widget.desktop.no_shortcut": "Desktop-Dateien unterstützen das Speichern von Verknüpfungen nicht",

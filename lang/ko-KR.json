@@ -691,6 +691,7 @@
   "widget.categories.default_document": "문서",
   "widget.categories.default_archive": "아카이브",
   "widget.categories.default_audio": "오디오",
+    "widget.categories.default_code": "코드/스크립트",
   "widget.folder_mapping.empty": "빈 폴더",
   "widget.folder_mapping.unavailable": "이 폴더를 사용할 수 없습니다.",
   "widget.desktop.no_shortcut": "데스크탑 파일은 바로가기 저장을 지원하지 않습니다.",

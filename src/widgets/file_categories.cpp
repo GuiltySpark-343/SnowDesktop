@@ -18,6 +18,7 @@
 #include "../menu_fluent_glyphs.h"
 #include <algorithm>
 #include <shlobj.h>
+#include <shobjidl.h>
 #include <shlwapi.h>
 #include <unordered_set>
 #include "../l10n.h"
@@ -50,6 +51,33 @@ static bool IsShortcutItem(const DesktopItem& item)
 }
 
 /**
+ * @brief 判断 .lnk 快捷方式的目标是否为文件夹。
+ * @param item 桌面项目（.lnk 快捷方式）。
+ * @return true 如果快捷方式指向一个目录。
+ */
+static bool ShortcutTargetsFolder(const DesktopItem& item)
+{
+    if (item.parsingName.empty())
+        return false;
+    Microsoft::WRL::ComPtr<IShellLinkW> shellLink;
+    if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(shellLink.GetAddressOf()))))
+        return false;
+    Microsoft::WRL::ComPtr<IPersistFile> persistFile;
+    if (FAILED(shellLink.As(&persistFile)))
+        return false;
+    if (FAILED(persistFile->Load(item.parsingName.c_str(), STGM_READ)))
+        return false;
+    wchar_t targetPath[MAX_PATH]{};
+    if (FAILED(shellLink->GetPath(targetPath, MAX_PATH, nullptr, 0)) ||
+        targetPath[0] == L'\0')
+        return false;
+    const DWORD attributes = GetFileAttributesW(targetPath);
+    return attributes != INVALID_FILE_ATTRIBUTES &&
+        (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+/**
  * @brief 判断桌面项目是否为文件系统上的真实文件夹。
  * @param item 桌面项目。
  * @return true 如果 PIDL 可解析为路径且文件属性包含 FILE_ATTRIBUTE_DIRECTORY。
@@ -72,6 +100,9 @@ static std::wstring FileCategoryIdForItem(const DesktopItem& item, const Categor
 {
     const std::wstring ext = DesktopItemExtensionUpper(item);
     if (IsFilesystemFolder(item))
+        return L"folders";
+    // 快捷方式按其目标归类：指向文件夹的快捷方式归入"文件夹"。
+    if (IsShortcutItem(item) && ShortcutTargetsFolder(item))
         return L"folders";
     std::wstring categoryId = CategoryIdForExtension(settings, ext);
     if (!categoryId.empty())
@@ -298,6 +329,26 @@ void FileCategories::EnsureCategorySnapshot() const
                     return posA < posB;
                 return _wcsicmp(itemA.name.c_str(), itemB.name.c_str()) < 0;
             });
+    }
+
+    else
+    {
+        // Non-date grouping: keep every category sorted by name (first letter).
+        for (auto& pair : categorySnapshot_.keysByCategory)
+        {
+            std::vector<std::wstring>& keys = pair.second;
+            std::stable_sort(keys.begin(), keys.end(),
+                [this](const std::wstring& a, const std::wstring& b) -> bool
+                {
+                    size_t ia = app_->FindItemIndexByKey(a);
+                    size_t ib = app_->FindItemIndexByKey(b);
+                    if (ia == static_cast<size_t>(-1) || ib == static_cast<size_t>(-1))
+                        return _wcsicmp(a.c_str(), b.c_str()) < 0;
+                    return _wcsicmp(
+                        app_->GetDesktopItems()[ia].name.c_str(),
+                        app_->GetDesktopItems()[ib].name.c_str()) < 0;
+                });
+        }
     }
 
     const auto order = GetCategoryOrder(app_->GetCategorySettings());
