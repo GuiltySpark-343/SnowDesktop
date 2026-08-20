@@ -333,21 +333,31 @@ void FileCategories::EnsureCategorySnapshot() const
 
     else
     {
-        // Non-date grouping: keep every category sorted by name (first letter).
+        // Non-date grouping: sort by file extension first so each suffix forms
+        // its own block (e.g. .docx before .md before .pdf before .pptx), then
+        // by the file name (first letter) inside the same extension.
+        auto byExtensionThenName = [this](const std::wstring& a,
+            const std::wstring& b) -> bool
+        {
+            size_t ia = app_->FindItemIndexByKey(a);
+            size_t ib = app_->FindItemIndexByKey(b);
+            if (ia == static_cast<size_t>(-1) || ib == static_cast<size_t>(-1))
+                return _wcsicmp(a.c_str(), b.c_str()) < 0;
+            const DesktopItem& itemA = app_->GetDesktopItems()[ia];
+            const DesktopItem& itemB = app_->GetDesktopItems()[ib];
+            const std::wstring extA = ToUpperInvariant(
+                PathFindExtensionW(itemA.name.c_str()));
+            const std::wstring extB = ToUpperInvariant(
+                PathFindExtensionW(itemB.name.c_str()));
+            const int extensionCompare = _wcsicmp(extA.c_str(), extB.c_str());
+            if (extensionCompare != 0)
+                return extensionCompare < 0;
+            return _wcsicmp(itemA.name.c_str(), itemB.name.c_str()) < 0;
+        };
         for (auto& pair : categorySnapshot_.keysByCategory)
         {
             std::vector<std::wstring>& keys = pair.second;
-            std::stable_sort(keys.begin(), keys.end(),
-                [this](const std::wstring& a, const std::wstring& b) -> bool
-                {
-                    size_t ia = app_->FindItemIndexByKey(a);
-                    size_t ib = app_->FindItemIndexByKey(b);
-                    if (ia == static_cast<size_t>(-1) || ib == static_cast<size_t>(-1))
-                        return _wcsicmp(a.c_str(), b.c_str()) < 0;
-                    return _wcsicmp(
-                        app_->GetDesktopItems()[ia].name.c_str(),
-                        app_->GetDesktopItems()[ib].name.c_str()) < 0;
-                });
+            std::stable_sort(keys.begin(), keys.end(), byExtensionThenName);
         }
     }
 
