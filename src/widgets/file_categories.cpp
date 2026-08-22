@@ -212,10 +212,11 @@ static std::wstring FileCategoryIdForItemByDate(const DesktopItem& item)
 
 /**
  * @brief 判断桌面项目是否应收录到分类面板中。
- *        排除系统图标（此电脑、用户文件、网络、控制面板、回收站）和快捷方式文件。
+ *        排除系统图标（此电脑、用户文件、网络、控制面板、回收站）。
+ *        普通快捷方式文件不收集；但指向文件夹的快捷方式按文件夹收录。
  * @param app DesktopApp 实例指针。
  * @param item 待判断的桌面项目。
- * @return true 如果项目应被收录；false 如果受保护或为快捷方式。
+ * @return true 如果项目应被收录。
  */
 static bool IsCollectable(DesktopApp* app, const DesktopItem& item)
 {
@@ -228,7 +229,12 @@ static bool IsCollectable(DesktopApp* app, const DesktopItem& item)
         clsid == kDesktopIconClsidNetwork ||
         clsid == kDesktopIconClsidControlPanel ||
         clsid == kDesktopIconClsidRecycleBin;
-    return !protectedIcon && !IsShortcutItem(item) && !item.layoutKey.empty();
+    if (protectedIcon || item.layoutKey.empty())
+        return false;
+    // 快捷方式只有指向文件夹时才收集（当作文件夹处理）。
+    if (IsShortcutItem(item))
+        return ShortcutTargetsFolder(item);
+    return true;
 }
 
 void FileCategories::EnsureCategorySnapshot() const
