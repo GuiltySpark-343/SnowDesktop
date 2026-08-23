@@ -4,6 +4,33 @@
 
 // Middle-button behavior and pointer-move drag updates.
 
+namespace
+{
+
+/** @brief 根据 8 向缩放方向返回对应系统光标 */
+HCURSOR ResizeCursorForDir(WidgetResizeDir dir)
+{
+    switch (dir)
+    {
+        case WidgetResizeDir::Left:
+        case WidgetResizeDir::Right:
+            return LoadCursorW(nullptr, IDC_SIZEWE);
+        case WidgetResizeDir::Top:
+        case WidgetResizeDir::Bottom:
+            return LoadCursorW(nullptr, IDC_SIZENS);
+        case WidgetResizeDir::TopLeft:
+        case WidgetResizeDir::BottomRight:
+            return LoadCursorW(nullptr, IDC_SIZENWSE);
+        case WidgetResizeDir::TopRight:
+        case WidgetResizeDir::BottomLeft:
+            return LoadCursorW(nullptr, IDC_SIZENESW);
+        default:
+            return LoadCursorW(nullptr, IDC_ARROW);
+    }
+}
+
+} // namespace
+
 void DesktopApp::OnMiddleButtonDown(WPARAM wp, LPARAM lp)
 {
     (void)wp;
@@ -101,6 +128,53 @@ void DesktopApp::OnMouseMove(WPARAM wp, LPARAM lp)
     lastMousePoint_ = current;
     UpdateSystemTaskbarRevealGuard();
     UpdateDockWindowPreview(current);
+
+    // ── 悬停/拖拽光标反馈：移动 = SIZEALL，缩放 = 方向箭头 ──
+    {
+        HCURSOR desired = LoadCursorW(nullptr, IDC_ARROW);
+        if (widgetAction_ == WidgetAction::Move)
+        {
+            desired = LoadCursorW(nullptr, IDC_SIZEALL);
+        }
+        else if (widgetAction_ == WidgetAction::Resize)
+        {
+            desired = ResizeCursorForDir(widgetResizeDir_);
+        }
+        else if (!mouseDown_ && !dragSession_.IsActive())
+        {
+            WidgetHit hoverHit = WidgetHit::None;
+            for (auto it = containers_.rbegin();
+                 it != containers_.rend(); ++it)
+            {
+                if (desktopIconsHidden_ &&
+                    !IsRetainedContainer(it->get()))
+                    continue;
+                auto* wc =
+                    dynamic_cast<WidgetContainer*>(it->get());
+                if (!wc) continue;
+                RECT frame = wc->GetFrameRect();
+                if (IsRectEmptyRect(frame) ||
+                    !PtInRect(&frame, current))
+                    continue;
+                hoverHit = wc->HitTestWidget(current);
+                break;
+            }
+            if (hoverHit == WidgetHit::None)
+            {
+                const size_t standalone =
+                    HitTestStandaloneWidgetIndex(current);
+                if (standalone < widgets_.size())
+                    hoverHit = HitTestStandaloneWidget(
+                        standalone, current);
+            }
+            if (hoverHit == WidgetHit::MoveHandle)
+                desired = LoadCursorW(nullptr, IDC_SIZEALL);
+            else if (IsWidgetResizeHit(hoverHit))
+                desired = ResizeCursorForDir(
+                    ResizeDirFromHit(hoverHit));
+        }
+        SetCursor(desired);
+    }
 
     if (luaWidgetPanelMouseDown_ &&
         !luaWidgetPanelRequest_.widgetId.empty() &&
@@ -290,10 +364,50 @@ void DesktopApp::OnMouseMove(WPARAM wp, LPARAM lp)
 
             GridCell cell = widgetDragOriginalCell_;
             GridSpan span = widgetDragOriginalSpan_;
-            span.columns += dCol;
-            span.rows += dRow;
+            const WidgetResizeDir dir = widgetResizeDir_;
+
+            // 水平方向：从右侧拖 = 扩宽；从左侧拖 = 左缘移动同时扩宽
+            switch (dir)
+            {
+                case WidgetResizeDir::Right:
+                case WidgetResizeDir::TopRight:
+                case WidgetResizeDir::BottomRight:
+                    span.columns = widgetDragOriginalSpan_.columns + dCol;
+                    break;
+                case WidgetResizeDir::Left:
+                case WidgetResizeDir::TopLeft:
+                case WidgetResizeDir::BottomLeft:
+                    cell.column = widgetDragOriginalCell_.column + dCol;
+                    span.columns = widgetDragOriginalSpan_.columns - dCol;
+                    break;
+                default: break;
+            }
+            // 垂直方向：从下侧拖 = 增高；从上侧拖 = 顶缘移动同时增高
+            switch (dir)
+            {
+                case WidgetResizeDir::Bottom:
+                case WidgetResizeDir::BottomLeft:
+                case WidgetResizeDir::BottomRight:
+                    span.rows = widgetDragOriginalSpan_.rows + dRow;
+                    break;
+                case WidgetResizeDir::Top:
+                case WidgetResizeDir::TopLeft:
+                case WidgetResizeDir::TopRight:
+                    cell.row = widgetDragOriginalCell_.row + dRow;
+                    span.rows = widgetDragOriginalSpan_.rows - dRow;
+                    break;
+                default: break;
+            }
+
+            // 约束：span 不小于 1、不超出页面；cell 不越界
+            span.columns = std::clamp(span.columns, 1, page->columns);
+            span.rows = std::clamp(span.rows, 1, page->rows);
+            cell.column = std::clamp(cell.column, 0,
+                std::max(0, page->columns - span.columns));
+            cell.row = std::clamp(cell.row, 0,
+                std::max(0, page->rows - span.rows));
             span = ClampWidgetGridSpan(widget, span,
-                page->columns - cell.column, page->rows - cell.row);
+                page->columns, page->rows);
 
             widgetPreviewCell_ = cell;
             widgetPreviewSpan_ = span;

@@ -604,6 +604,7 @@ void DesktopApp::OnLeftButtonUp(WPARAM wp, LPARAM lp)
             PlaceWidgetWithDisplacement(mouseDownWidgetIndex_, widgetPreviewCell_, widgetPreviewSpan_, false);
         // PendingMove/PendingResize: just cancel without displacement
         widgetAction_ = WidgetAction::None;
+        widgetResizeDir_ = WidgetResizeDir::None;
         widgetDockTarget_ = false;
         widgetDockTargetContainer_ = nullptr;
         widgetDockInsertIndex_ = 0;

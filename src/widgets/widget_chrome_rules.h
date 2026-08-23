@@ -6,6 +6,11 @@
 namespace snowdesktop::widget_chrome_rules
 {
 
+/** @brief 缩放热区：四边厚度（px） */
+inline constexpr int kResizeEdgeThickness = 6;
+/** @brief 缩放热区：四角边长（px） */
+inline constexpr int kResizeCornerSize = 14;
+
 /**
  * Return the horizontal inset that keeps the bottom-bar edge content inside
  * the rounded widget outline.

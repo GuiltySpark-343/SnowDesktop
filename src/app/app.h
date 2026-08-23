@@ -2724,6 +2724,7 @@ private:
     bool draggingWidget_ = false;
     bool resizingWidget_ = false;
     enum class WidgetAction { None, PendingMove, PendingResize, Move, Resize };
+    WidgetResizeDir widgetResizeDir_ = WidgetResizeDir::None;
     WidgetAction widgetAction_ = WidgetAction::None;
     bool middleButtonWidgetMove_ = false;
     GridCell widgetDragOriginalCell_{};
